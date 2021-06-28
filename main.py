@@ -5,9 +5,10 @@ from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 from types import SimpleNamespace
 
-def count_tweet_types(data):
+def get_tweet_type(data):
   if hasattr(data, 'referenced_tweets'):
     tweet_type = data.referenced_tweets[0].type
+
     if tweet_type == "retweeted":
       return ("retweet", 1)
     elif tweet_type == "quoted":
@@ -16,6 +17,20 @@ def count_tweet_types(data):
       return ("replied_to", 1)
 
   return ("tweet", 1)
+
+def get_domains(data):
+  domains = []
+
+  if hasattr(data, 'context_annotations'):
+    context_annotations = data.context_annotations
+
+    for context_annotation in context_annotations:
+      domain = context_annotation.domain.name
+
+      if domain not in domains:
+        domains.append(domain)
+
+  return domains
   
 def process_lines(lines):
     tweets = lines.map(lambda obj: obj[1]).filter(lambda line: len(line) >= 11)
@@ -23,10 +38,14 @@ def process_lines(lines):
     datas = objects.map(lambda obj: obj.data) 
 
     # Count for each tweet types (tweet, retweet, quote, reply)
-    converted_tweets = datas.map(count_tweet_types)
+    converted_tweets = datas.map(get_tweet_type)
     tweet_types = converted_tweets.reduceByKey(lambda a, b: a + b)
 
-    return tweet_types
+    # Count for every domains
+    converted_domains = datas.flatMap(get_domains).map(lambda domain: (domain, 1))
+    tweet_domains = converted_domains.reduceByKey(lambda a, b: a + b)
+
+    return tweet_domains
 
 # Environment variables
 APP_NAME = "TwitSwap - PySpark"
