@@ -31,6 +31,23 @@ def get_domains(data):
         domains.append(domain)
 
   return domains
+
+def get_annotations(data):
+  annotations = []
+
+  if hasattr(data, 'entities'):
+    entities = data.entities
+
+    if hasattr(entities, 'annotations'):
+      annotation_entities = entities.annotations 
+
+      for annotation_entity in annotation_entities:
+        annotation = annotation_entity.normalized_text
+
+        if annotation not in annotations:
+          annotations.append(annotation)
+
+  return annotations
   
 def process_lines(lines):
     tweets = lines.map(lambda obj: obj[1]).filter(lambda line: len(line) >= 11)
@@ -45,7 +62,11 @@ def process_lines(lines):
     converted_domains = datas.flatMap(get_domains).map(lambda domain: (domain, 1))
     tweet_domains = converted_domains.reduceByKey(lambda a, b: a + b)
 
-    return tweet_domains
+    # Count for every annotations
+    converted_annotations = datas.flatMap(get_annotations).map(lambda annotation: (annotation, 1))
+    tweet_annotations = converted_annotations.reduceByKey(lambda a, b: a + b)
+
+    return tweet_annotations
 
 # Environment variables
 APP_NAME = "TwitSwap - PySpark"
