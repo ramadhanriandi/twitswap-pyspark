@@ -57,6 +57,23 @@ def get_tweet_lang(data):
       return (tweet_lang, 1)
 
   return ("other", 1)
+
+def get_tweet_hashtags(data):
+  hashtags = []
+
+  if hasattr(data, 'entities'):
+    entities = data.entities
+
+    if hasattr(entities, 'hashtags'):
+      hashtag_entities = entities.hashtags 
+
+      for hashtag_entity in hashtag_entities:
+        hashtag = hashtag_entity.tag
+
+        if hashtag not in hashtags:
+          hashtags.append(hashtag)
+
+  return hashtags
   
 def process_lines(lines):
   tweets = lines.map(lambda obj: obj[1]).filter(lambda line: len(line) >= 11)
@@ -79,7 +96,11 @@ def process_lines(lines):
   converted_langs = datas.map(get_tweet_lang)
   tweet_langs = converted_langs.reduceByKey(lambda a, b: a + b)
 
-  return tweet_langs
+  # Count for every hashtags
+  converted_hashtags = datas.flatMap(get_tweet_hashtags).map(lambda hashtag: (hashtag, 1))
+  tweet_hashtags = converted_hashtags.reduceByKey(lambda a, b: a + b)
+
+  return tweet_hashtags
 
 # Environment variables
 APP_NAME = "TwitSwap - PySpark"
