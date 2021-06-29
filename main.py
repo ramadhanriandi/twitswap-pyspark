@@ -18,7 +18,7 @@ def get_tweet_type(data):
 
   return ("tweet", 1)
 
-def get_domains(data):
+def get_tweet_domains(data):
   domains = []
 
   if hasattr(data, 'context_annotations'):
@@ -32,7 +32,7 @@ def get_domains(data):
 
   return domains
 
-def get_annotations(data):
+def get_tweet_annotations(data):
   annotations = []
 
   if hasattr(data, 'entities'):
@@ -48,25 +48,38 @@ def get_annotations(data):
           annotations.append(annotation)
 
   return annotations
+
+def get_tweet_lang(data):
+  if hasattr(data, 'lang'):
+    tweet_lang = data.lang
+
+    if tweet_lang == "en" or tweet_lang == "in":
+      return (tweet_lang, 1)
+
+  return ("other", 1)
   
 def process_lines(lines):
-    tweets = lines.map(lambda obj: obj[1]).filter(lambda line: len(line) >= 11)
-    objects = tweets.map(lambda tweet: json.loads(tweet, object_hook = lambda d: SimpleNamespace(**d)))
-    datas = objects.map(lambda obj: obj.data) 
+  tweets = lines.map(lambda obj: obj[1]).filter(lambda line: len(line) >= 11)
+  objects = tweets.map(lambda tweet: json.loads(tweet, object_hook = lambda d: SimpleNamespace(**d)))
+  datas = objects.map(lambda obj: obj.data) 
 
-    # Count for each tweet types (tweet, retweet, quote, reply)
-    converted_tweets = datas.map(get_tweet_type)
-    tweet_types = converted_tweets.reduceByKey(lambda a, b: a + b)
+  # Count for each tweet types (tweet, retweet, quote, reply)
+  converted_tweets = datas.map(get_tweet_type)
+  tweet_types = converted_tweets.reduceByKey(lambda a, b: a + b)
 
-    # Count for every domains
-    converted_domains = datas.flatMap(get_domains).map(lambda domain: (domain, 1))
-    tweet_domains = converted_domains.reduceByKey(lambda a, b: a + b)
+  # Count for every domains
+  converted_domains = datas.flatMap(get_tweet_domains).map(lambda domain: (domain, 1))
+  tweet_domains = converted_domains.reduceByKey(lambda a, b: a + b)
 
-    # Count for every annotations
-    converted_annotations = datas.flatMap(get_annotations).map(lambda annotation: (annotation, 1))
-    tweet_annotations = converted_annotations.reduceByKey(lambda a, b: a + b)
+  # Count for every annotations
+  converted_annotations = datas.flatMap(get_tweet_annotations).map(lambda annotation: (annotation, 1))
+  tweet_annotations = converted_annotations.reduceByKey(lambda a, b: a + b)
 
-    return tweet_annotations
+  # Count for every langs
+  converted_langs = datas.map(get_tweet_lang)
+  tweet_langs = converted_langs.reduceByKey(lambda a, b: a + b)
+
+  return tweet_langs
 
 # Environment variables
 APP_NAME = "TwitSwap - PySpark"
@@ -77,8 +90,8 @@ BOOTSTRAP_SERVER = "localhost:9092"
 
 # Spark configurations
 conf = SparkConf() \
-    .setAppName(APP_NAME) \
-    .setMaster(MASTER)
+  .setAppName(APP_NAME) \
+  .setMaster(MASTER)
 sc = SparkContext.getOrCreate(conf=conf)
 
 ssc = StreamingContext(sc, 10) # stream each ten second
