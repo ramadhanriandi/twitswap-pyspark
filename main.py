@@ -74,6 +74,17 @@ def get_tweet_hashtags(data):
           hashtags.append(hashtag)
 
   return hashtags
+
+def get_tweet_metrics(data):
+  metrics = []
+
+  if hasattr(data, 'public_metrics'):
+    metrics.append(('retweet_count', data.public_metrics.retweet_count))
+    metrics.append(('reply_count', data.public_metrics.reply_count))
+    metrics.append(('like_count', data.public_metrics.like_count))
+    metrics.append(('quote_count', data.public_metrics.quote_count))
+
+  return metrics
   
 def process_lines(lines):
   tweets = lines.map(lambda obj: obj[1]).filter(lambda line: len(line) >= 11)
@@ -100,7 +111,11 @@ def process_lines(lines):
   converted_hashtags = datas.flatMap(get_tweet_hashtags).map(lambda hashtag: (hashtag, 1))
   tweet_hashtags = converted_hashtags.reduceByKey(lambda a, b: a + b)
 
-  return tweet_hashtags
+  # Count for every public metrics
+  converted_metrics = datas.flatMap(get_tweet_metrics)
+  tweet_metrics = converted_metrics.reduceByKey(lambda a, b: a + b)
+
+  return tweet_metrics
 
 # Environment variables
 APP_NAME = "TwitSwap - PySpark"
