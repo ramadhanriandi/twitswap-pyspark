@@ -62,6 +62,14 @@ def get_tweet_lang(data):
 
   return ("other", 1)
 
+# Get tweet coordinates
+def get_tweet_coordinates(data):
+  if (hasattr(data, 'geo')):
+    if (hasattr(data.geo, 'coordinates')):
+      return data.geo.coordinates.coordinates
+
+  return []
+
 # Get tweet hashtags
 def get_tweet_hashtags(data):
   hashtags = []
@@ -134,6 +142,10 @@ def process_lines(lines):
   converted_langs = datas.map(get_tweet_lang)
   tweet_langs = converted_langs.reduceByKey(lambda a, b: a + b)
 
+  # Get every coordinates
+  converted_coordinates = datas.map(get_tweet_coordinates)
+  tweet_coordinates = converted_coordinates.filter(lambda coordinates: len(coordinates) == 2)
+
   # Count for every hashtags
   converted_hashtags = datas.flatMap(get_tweet_hashtags).map(lambda hashtag: (hashtag, 1))
   tweet_hashtags = converted_hashtags.reduceByKey(lambda a, b: a + b)
@@ -146,7 +158,7 @@ def process_lines(lines):
   converted_popularities = datas.map(get_tweet_popularity)
   tweet_popularities = converted_popularities.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
 
-  return tweet_popularities
+  return tweet_coordinates
 
 # Environment variables
 APP_NAME = "TwitSwap - PySpark"
