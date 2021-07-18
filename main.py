@@ -5,6 +5,7 @@ from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 from types import SimpleNamespace
 
+# Get tweet type
 def get_tweet_type(data):
   if hasattr(data, 'referenced_tweets'):
     tweet_type = data.referenced_tweets[0].type
@@ -18,6 +19,7 @@ def get_tweet_type(data):
 
   return ("tweet", 1)
 
+# Get tweet domains
 def get_tweet_domains(data):
   domains = []
 
@@ -32,6 +34,7 @@ def get_tweet_domains(data):
 
   return domains
 
+# Get tweet annotations
 def get_tweet_annotations(data):
   annotations = []
 
@@ -49,6 +52,7 @@ def get_tweet_annotations(data):
 
   return annotations
 
+# Get tweet language
 def get_tweet_lang(data):
   if hasattr(data, 'lang'):
     tweet_lang = data.lang
@@ -58,6 +62,7 @@ def get_tweet_lang(data):
 
   return ("other", 1)
 
+# Get tweet hashtags
 def get_tweet_hashtags(data):
   hashtags = []
 
@@ -75,6 +80,7 @@ def get_tweet_hashtags(data):
 
   return hashtags
 
+# Get tweet metrics
 def get_tweet_metrics(data):
   metrics = []
 
@@ -85,15 +91,36 @@ def get_tweet_metrics(data):
     metrics.append(('quote_count', data.public_metrics.quote_count))
 
   return metrics
-  
+
+# Get tweet popularity
+def get_tweet_popularity(data):
+  if hasattr(data, 'id'):
+    popularity = 0
+
+    if hasattr(data, 'public_metrics'):
+      popularity += data.public_metrics.retweet_count
+      popularity += data.public_metrics.reply_count
+      popularity += data.public_metrics.like_count
+      popularity += data.public_metrics.quote_count
+
+    return (data.id, popularity)
+
+  return ('', 0)
+
+def get_popular_tweets(rdd):
+  popular_tweets = rdd.sortBy(lambda x: x[1], ascending = False)
+  rdd.filter(popular_tweets.contains)
+
+# Process each line of the stream
 def process_lines(lines):
+  # Preprocess incoming tweet stream
   tweets = lines.map(lambda obj: obj[1]).filter(lambda line: len(line) >= 11)
   objects = tweets.map(lambda tweet: json.loads(tweet, object_hook = lambda d: SimpleNamespace(**d)))
   datas = objects.map(lambda obj: obj.data) 
 
   # Count for each tweet types (tweet, retweet, quote, reply)
-  converted_tweets = datas.map(get_tweet_type)
-  tweet_types = converted_tweets.reduceByKey(lambda a, b: a + b)
+  converted_types = datas.map(get_tweet_type)
+  tweet_types = converted_types.reduceByKey(lambda a, b: a + b)
 
   # Count for every domains
   converted_domains = datas.flatMap(get_tweet_domains).map(lambda domain: (domain, 1))
@@ -115,7 +142,11 @@ def process_lines(lines):
   converted_metrics = datas.flatMap(get_tweet_metrics)
   tweet_metrics = converted_metrics.reduceByKey(lambda a, b: a + b)
 
-  return tweet_metrics
+  # Count for every popularities
+  converted_popularities = datas.map(get_tweet_popularity)
+  tweet_popularities = converted_popularities.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
+
+  return tweet_popularities
 
 # Environment variables
 APP_NAME = "TwitSwap - PySpark"
