@@ -1,9 +1,14 @@
 import json
+import psycopg2
 import pyspark
 from pyspark import SparkContext, SparkConf
 from pyspark.streaming import StreamingContext
 from pyspark.streaming.kafka import KafkaUtils
 from types import SimpleNamespace
+
+import config
+import postgresql
+import tweet_popularity
 
 # Get tweet type
 def get_tweet_type(data):
@@ -100,31 +105,12 @@ def get_tweet_metrics(data):
 
   return metrics
 
-# Get tweet popularity
-def get_tweet_popularity(data):
-  if hasattr(data, 'id'):
-    popularity = 0
-
-    if hasattr(data, 'public_metrics'):
-      popularity += data.public_metrics.retweet_count
-      popularity += data.public_metrics.reply_count
-      popularity += data.public_metrics.like_count
-      popularity += data.public_metrics.quote_count
-
-    return (data.id, popularity)
-
-  return ('', 0)
-
-def get_popular_tweets(rdd):
-  popular_tweets = rdd.sortBy(lambda x: x[1], ascending = False)
-  rdd.filter(popular_tweets.contains)
-
 # Process each line of the stream
 def process_lines(lines):
   # Preprocess incoming tweet stream
   tweets = lines.map(lambda obj: obj[1]).filter(lambda line: len(line) >= 11)
   objects = tweets.map(lambda tweet: json.loads(tweet, object_hook = lambda d: SimpleNamespace(**d)))
-  datas = objects.map(lambda obj: obj.data) 
+  datas = objects.map(lambda obj: obj.data)
 
   # Count for each tweet types (tweet, retweet, quote, reply)
   converted_types = datas.map(get_tweet_type)
@@ -155,17 +141,18 @@ def process_lines(lines):
   tweet_metrics = converted_metrics.reduceByKey(lambda a, b: a + b)
 
   # Count for every popularities
-  converted_popularities = datas.map(get_tweet_popularity)
+  converted_popularities = objects.map(tweet_popularity.get_tweet_popularity)
   tweet_popularities = converted_popularities.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
+  tweet_popularities.foreachRDD(tweet_popularity.insert_tweet_popularity)
 
-  return tweet_coordinates
+  return tweet_popularities
 
 # Environment variables
-APP_NAME = "TwitSwap - PySpark"
-MASTER = "local"
+APP_NAME = config.spark_app_name
+MASTER = config.spark_master
 
-KAFKA_TOPIC = "raw-tweet-topic"
-BOOTSTRAP_SERVER = "localhost:9092"
+KAFKA_TOPIC = config.kafka_topic
+BOOTSTRAP_SERVER = config.kafka_bootstrap_server
 
 # Spark configurations
 conf = SparkConf() \
@@ -174,7 +161,7 @@ conf = SparkConf() \
 sc = SparkContext.getOrCreate(conf=conf)
 
 ssc = StreamingContext(sc, 10) # stream each ten second
-ssc.checkpoint("./checkpoint")
+ssc.checkpoint(config.spark_checkpoint)
 
 # Consume Kafka topic
 lines = KafkaUtils.createDirectStream(ssc, [KAFKA_TOPIC], {"metadata.broker.list": BOOTSTRAP_SERVER})
