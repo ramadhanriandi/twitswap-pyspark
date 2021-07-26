@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import config
 import postgresql
+import tweet_metric
 import tweet_popularity
 
 # Get tweet type
@@ -93,18 +94,6 @@ def get_tweet_hashtags(data):
 
   return hashtags
 
-# Get tweet metrics
-def get_tweet_metrics(data):
-  metrics = []
-
-  if hasattr(data, 'public_metrics'):
-    metrics.append(('retweet_count', data.public_metrics.retweet_count))
-    metrics.append(('reply_count', data.public_metrics.reply_count))
-    metrics.append(('like_count', data.public_metrics.like_count))
-    metrics.append(('quote_count', data.public_metrics.quote_count))
-
-  return metrics
-
 # Process each line of the stream
 def process_lines(lines):
   # Preprocess incoming tweet stream
@@ -137,15 +126,16 @@ def process_lines(lines):
   tweet_hashtags = converted_hashtags.reduceByKey(lambda a, b: a + b)
 
   # Count for every public metrics
-  converted_metrics = datas.flatMap(get_tweet_metrics)
+  converted_metrics = objects.flatMap(tweet_metric.get_tweet_metrics)
   tweet_metrics = converted_metrics.reduceByKey(lambda a, b: a + b)
+  tweet_metrics.foreachRDD(tweet_metric.insert_tweet_metrics)
 
   # Count for every popularities
   converted_popularities = objects.map(tweet_popularity.get_tweet_popularity)
   tweet_popularities = converted_popularities.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
   tweet_popularities.foreachRDD(tweet_popularity.insert_tweet_popularity)
 
-  return tweet_popularities
+  return tweet_metrics
 
 # Environment variables
 APP_NAME = config.spark_app_name
