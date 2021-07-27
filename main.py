@@ -8,6 +8,7 @@ from types import SimpleNamespace
 
 import config
 import postgresql
+import tweet_hashtag
 import tweet_metric
 import tweet_popularity
 
@@ -76,24 +77,6 @@ def get_tweet_coordinates(data):
 
   return []
 
-# Get tweet hashtags
-def get_tweet_hashtags(data):
-  hashtags = []
-
-  if hasattr(data, 'entities'):
-    entities = data.entities
-
-    if hasattr(entities, 'hashtags'):
-      hashtag_entities = entities.hashtags 
-
-      for hashtag_entity in hashtag_entities:
-        hashtag = hashtag_entity.tag
-
-        if hashtag not in hashtags:
-          hashtags.append(hashtag)
-
-  return hashtags
-
 # Process each line of the stream
 def process_lines(lines):
   # Preprocess incoming tweet stream
@@ -122,8 +105,10 @@ def process_lines(lines):
   tweet_coordinates = converted_coordinates.filter(lambda coordinates: len(coordinates) == 2)
 
   # Count for every hashtags
-  converted_hashtags = datas.flatMap(get_tweet_hashtags).map(lambda hashtag: (hashtag, 1))
-  tweet_hashtags = converted_hashtags.reduceByKey(lambda a, b: a + b)
+  converted_hashtags = objects.flatMap(tweet_hashtag.get_tweet_hashtags).map(lambda hashtag: (hashtag, 1))
+  reduced_hashtags = converted_hashtags.reduceByKey(lambda a, b: a + b)
+  tweet_hashtags = reduced_hashtags.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
+  tweet_hashtags.foreachRDD(tweet_hashtag.insert_tweet_hashtags)
 
   # Count for every public metrics
   converted_metrics = objects.flatMap(tweet_metric.get_tweet_metrics)
@@ -135,7 +120,7 @@ def process_lines(lines):
   tweet_popularities = converted_popularities.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
   tweet_popularities.foreachRDD(tweet_popularity.insert_tweet_popularity)
 
-  return tweet_metrics
+  return tweet_hashtags
 
 # Environment variables
 APP_NAME = config.spark_app_name

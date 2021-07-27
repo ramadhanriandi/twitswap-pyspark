@@ -2,7 +2,7 @@ import postgresql
 
 # Get tweet popularity
 def get_tweet_popularity(obj):
-  if hasattr(obj.data, 'id') and len(obj.matching_rules) > 0:
+  if hasattr(obj, 'data') and hasattr(obj.data, 'id') and len(obj.matching_rules) > 0:
     popularity = 0
 
     if hasattr(obj.data, 'public_metrics'):
