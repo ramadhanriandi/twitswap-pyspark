@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import config
 import postgresql
 import tweet_annotation
+import tweet_domain
 import tweet_hashtag
 import tweet_metric
 import tweet_popularity
@@ -26,21 +27,6 @@ def get_tweet_type(data):
       return ("replied_to", 1)
 
   return ("tweet", 1)
-
-# Get tweet domains
-def get_tweet_domains(data):
-  domains = []
-
-  if hasattr(data, 'context_annotations'):
-    context_annotations = data.context_annotations
-
-    for context_annotation in context_annotations:
-      domain = context_annotation.domain.name
-
-      if domain not in domains:
-        domains.append(domain)
-
-  return domains
 
 # Get tweet language
 def get_tweet_lang(data):
@@ -72,8 +58,10 @@ def process_lines(lines):
   tweet_types = converted_types.reduceByKey(lambda a, b: a + b)
 
   # Count for every domains
-  converted_domains = datas.flatMap(get_tweet_domains).map(lambda domain: (domain, 1))
-  tweet_domains = converted_domains.reduceByKey(lambda a, b: a + b)
+  converted_domains = objects.flatMap(tweet_domain.get_tweet_domains).map(lambda domain: (domain, 1))
+  reduced_domains = converted_domains.reduceByKey(lambda a, b: a + b)
+  tweet_domains = reduced_domains.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
+  tweet_domains.foreachRDD(tweet_domain.insert_tweet_domains)
 
   # Count for every annotations
   converted_annotations = objects.flatMap(tweet_annotation.get_tweet_annotations).map(lambda annotation: (annotation, 1))
