@@ -13,7 +13,7 @@ def get_tweet_popularity(obj):
 
     return (obj.data.id, popularity, obj.matching_rules[0].id)
 
-  return ('', 0)
+  return ('', 0, '')
 
 # Insert tweet popularity into a table
 def insert_tweet_popularity(rdd):

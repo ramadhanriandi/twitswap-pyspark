@@ -12,6 +12,7 @@ import tweet_annotation
 import tweet_coordinate
 import tweet_domain
 import tweet_hashtag
+import tweet_language
 import tweet_metric
 import tweet_popularity
 
@@ -28,16 +29,6 @@ def get_tweet_type(data):
       return ("replied_to", 1)
 
   return ("tweet", 1)
-
-# Get tweet language
-def get_tweet_lang(data):
-  if hasattr(data, 'lang'):
-    tweet_lang = data.lang
-
-    if tweet_lang == "en" or tweet_lang == "in":
-      return (tweet_lang, 1)
-
-  return ("other", 1)
 
 # Process each line of the stream
 def process_lines(lines):
@@ -63,8 +54,9 @@ def process_lines(lines):
   tweet_annotations.foreachRDD(tweet_annotation.insert_tweet_annotations)
 
   # Count for every langs
-  converted_langs = datas.map(get_tweet_lang)
+  converted_langs = objects.map(tweet_language.get_tweet_lang)
   tweet_langs = converted_langs.reduceByKey(lambda a, b: a + b)
+  tweet_langs.foreachRDD(tweet_language.insert_tweet_language)
 
   # Get every coordinates
   converted_coordinates = objects.map(tweet_coordinate.get_tweet_coordinates)
@@ -87,7 +79,7 @@ def process_lines(lines):
   tweet_popularities = converted_popularities.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
   tweet_popularities.foreachRDD(tweet_popularity.insert_tweet_popularity)
 
-  return tweet_coordinates
+  return tweet_langs
 
 # Environment variables
 APP_NAME = config.spark_app_name
