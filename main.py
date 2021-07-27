@@ -15,31 +15,18 @@ import tweet_hashtag
 import tweet_language
 import tweet_metric
 import tweet_popularity
-
-# Get tweet type
-def get_tweet_type(data):
-  if hasattr(data, 'referenced_tweets'):
-    tweet_type = data.referenced_tweets[0].type
-
-    if tweet_type == "retweeted":
-      return ("retweet", 1)
-    elif tweet_type == "quoted":
-      return ("quote", 1)
-    elif tweet_type == "replied_to":
-      return ("replied_to", 1)
-
-  return ("tweet", 1)
+import tweet_type
 
 # Process each line of the stream
 def process_lines(lines):
   # Preprocess incoming tweet stream
   tweets = lines.map(lambda obj: obj[1]).filter(lambda line: len(line) >= 11)
   objects = tweets.map(lambda tweet: json.loads(tweet, object_hook = lambda d: SimpleNamespace(**d)))
-  datas = objects.map(lambda obj: obj.data)
 
-  # Count for each tweet types (tweet, retweet, quote, reply)
-  converted_types = datas.map(get_tweet_type)
+  # Count for each tweet types
+  converted_types = objects.map(tweet_type.get_tweet_type)
   tweet_types = converted_types.reduceByKey(lambda a, b: a + b)
+  tweet_types.foreachRDD(tweet_type.insert_tweet_types)
 
   # Count for every domains
   converted_domains = objects.flatMap(tweet_domain.get_tweet_domains).map(lambda domain: (domain, 1))
@@ -56,7 +43,7 @@ def process_lines(lines):
   # Count for every langs
   converted_langs = objects.map(tweet_language.get_tweet_lang)
   tweet_langs = converted_langs.reduceByKey(lambda a, b: a + b)
-  tweet_langs.foreachRDD(tweet_language.insert_tweet_language)
+  tweet_langs.foreachRDD(tweet_language.insert_tweet_languages)
 
   # Get every coordinates
   converted_coordinates = objects.map(tweet_coordinate.get_tweet_coordinates)
@@ -77,9 +64,9 @@ def process_lines(lines):
   # Count for every popularities
   converted_popularities = objects.map(tweet_popularity.get_tweet_popularity)
   tweet_popularities = converted_popularities.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
-  tweet_popularities.foreachRDD(tweet_popularity.insert_tweet_popularity)
+  tweet_popularities.foreachRDD(tweet_popularity.insert_tweet_popularities)
 
-  return tweet_langs
+  return tweet_types
 
 # Environment variables
 APP_NAME = config.spark_app_name

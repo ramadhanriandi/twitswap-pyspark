@@ -13,10 +13,10 @@ def get_tweet_lang(obj):
   
   return ("", 0)
 
-# Insert tweet language into a table
-def insert_tweet_language(rdd):
+# Insert tweet languages into a table
+def insert_tweet_languages(rdd):
   connection, cursor = postgresql.get_connection_cursor()
-  tweet_languages = rdd.take(3)
+  tweet_languages = rdd.take(4)
 
   if len(tweet_languages) > 0:
     en_count = 0
@@ -25,7 +25,7 @@ def insert_tweet_language(rdd):
     rule_id = ""
 
     for data in tweet_languages:
-      if len(data) > 0:
+      if len(data[0]) > 0:
         parsed_language = data[0].split("|")
 
         language = parsed_language[0]

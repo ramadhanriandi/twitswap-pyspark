@@ -16,7 +16,7 @@ def get_tweet_popularity(obj):
   return ('', 0, '')
 
 # Insert tweet popularity into a table
-def insert_tweet_popularity(rdd):
+def insert_tweet_popularities(rdd):
   connection, cursor = postgresql.get_connection_cursor()
   tweet_popularities = rdd.take(3)
 
