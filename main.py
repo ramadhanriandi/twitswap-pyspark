@@ -9,6 +9,7 @@ from types import SimpleNamespace
 import config
 import postgresql
 import tweet_annotation
+import tweet_coordinate
 import tweet_domain
 import tweet_hashtag
 import tweet_metric
@@ -38,14 +39,6 @@ def get_tweet_lang(data):
 
   return ("other", 1)
 
-# Get tweet coordinates
-def get_tweet_coordinates(data):
-  if (hasattr(data, 'geo')):
-    if (hasattr(data.geo, 'coordinates')):
-      return data.geo.coordinates.coordinates
-
-  return []
-
 # Process each line of the stream
 def process_lines(lines):
   # Preprocess incoming tweet stream
@@ -74,8 +67,9 @@ def process_lines(lines):
   tweet_langs = converted_langs.reduceByKey(lambda a, b: a + b)
 
   # Get every coordinates
-  converted_coordinates = datas.map(get_tweet_coordinates)
-  tweet_coordinates = converted_coordinates.filter(lambda coordinates: len(coordinates) == 2)
+  converted_coordinates = objects.map(tweet_coordinate.get_tweet_coordinates)
+  tweet_coordinates = converted_coordinates.filter(lambda coordinates: len(coordinates) == 3)
+  tweet_coordinates.foreachRDD(tweet_coordinate.insert_tweet_coordinates)
 
   # Count for every hashtags
   converted_hashtags = objects.flatMap(tweet_hashtag.get_tweet_hashtags).map(lambda hashtag: (hashtag, 1))
@@ -93,7 +87,7 @@ def process_lines(lines):
   tweet_popularities = converted_popularities.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
   tweet_popularities.foreachRDD(tweet_popularity.insert_tweet_popularity)
 
-  return tweet_hashtags
+  return tweet_coordinates
 
 # Environment variables
 APP_NAME = config.spark_app_name
