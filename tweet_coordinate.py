@@ -25,8 +25,7 @@ def insert_tweet_coordinates(rdd):
 
     cursor.execute(
       """INSERT INTO tweet_geolocations(lat, long, rule_id) VALUES (%s, %s, %s)""",
-      (latitude, longitude, "rule_id_dummy")
-      # (latitude, longitude, rule_id)
+      (latitude, longitude, rule_id)
     )
   
   postgresql.close_connection_cursor(connection, cursor)

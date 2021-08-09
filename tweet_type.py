@@ -51,8 +51,7 @@ def insert_tweet_types(rdd):
     if len(rule_id) > 0:
       cursor.execute(
         """INSERT INTO tweet_types(tweet_count, retweet_count, quote_count, reply_count, rule_id) VALUES (%s, %s, %s, %s, %s)""",
-        (tweet_count, retweet_count, quote_count, reply_count, "rule_id_dummy")
-        # (tweet_count, retweet_count, quote_count, reply_count, rule_id)
+        (tweet_count, retweet_count, quote_count, reply_count, rule_id)
       )
   
   postgresql.close_connection_cursor(connection, cursor)

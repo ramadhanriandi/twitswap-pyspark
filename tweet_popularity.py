@@ -28,8 +28,7 @@ def insert_tweet_popularities(rdd):
     if len(tweet_id) > 0 and popularity > 0:
       cursor.execute(
         """INSERT INTO tweet_popularities(tweet_id, popularity, rule_id) VALUES (%s, %s, %s)""",
-        (tweet_id, popularity, "rule_id_dummy")
-        # (tweet_id, popularity, rule_id)
+        (tweet_id, popularity, rule_id)
       )
   
   postgresql.close_connection_cursor(connection, cursor)

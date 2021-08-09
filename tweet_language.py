@@ -42,8 +42,7 @@ def insert_tweet_languages(rdd):
     if len(rule_id) > 0:
       cursor.execute(
         """INSERT INTO tweet_languages(en_count, in_count, other_count, rule_id) VALUES (%s, %s, %s, %s)""",
-        (en_count, in_count, other_count, "rule_id_dummy")
-        # (en_count, in_count, other_count, rule_id)
+        (en_count, in_count, other_count, rule_id)
       )
   
   postgresql.close_connection_cursor(connection, cursor)

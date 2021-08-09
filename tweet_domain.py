@@ -30,8 +30,7 @@ def insert_tweet_domains(rdd):
 
     cursor.execute(
       """INSERT INTO tweet_domains(name, count, rule_id) VALUES (%s, %s, %s)""",
-      (name, count, "rule_id_dummy")
-      # (name, count, rule_id)
+      (name, count, rule_id)
     )
   
   postgresql.close_connection_cursor(connection, cursor)

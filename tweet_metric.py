@@ -29,8 +29,7 @@ def insert_tweet_metrics(rdd):
 
     cursor.execute(
       """INSERT INTO tweet_metrics(retweet_count, reply_count, like_count, quote_count, rule_id) VALUES (%s, %s, %s, %s, %s)""",
-      (retweet_count, reply_count, like_count, quote_count, "rule_id_dummy")
-      # (retweet_count, reply_count, like_count, quote_count, rule_id)
+      (retweet_count, reply_count, like_count, quote_count, rule_id)
     )
     
   postgresql.close_connection_cursor(connection, cursor)
