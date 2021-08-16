@@ -13,9 +13,10 @@ def get_tweet_hashtags(obj):
 
       for hashtag_entity in hashtag_entities:
         hashtag = hashtag_entity.tag
-
-        if hashtag not in hashtags:
-          hashtags.append(hashtag + '|' + rule_id)
+        new_hashtag = hashtag.lower() + '|' + rule_id
+        
+        if new_hashtag not in hashtags:
+          hashtags.append(new_hashtag)
 
   return hashtags
 

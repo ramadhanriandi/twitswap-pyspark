@@ -10,9 +10,10 @@ def get_tweet_domains(obj):
 
     for context_annotation in context_annotations:
       domain = context_annotation.domain.name
+      new_domain = domain.lower() + '|' + rule_id
 
-      if domain not in domains:
-        domains.append(domain + '|' + rule_id)
+      if new_domain not in domains:
+        domains.append(new_domain)
 
   return domains
 

@@ -13,9 +13,10 @@ def get_tweet_annotations(obj):
 
       for annotation_entity in annotation_entities:
         annotation = annotation_entity.normalized_text
+        new_annotation = annotation.lower() + '|' + rule_id
 
         if annotation not in annotations:
-          annotations.append(annotation + '|' + rule_id)
+          annotations.append(new_annotation)
 
   return annotations
 

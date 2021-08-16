@@ -16,6 +16,7 @@ import tweet_language
 import tweet_metric
 import tweet_popularity
 import tweet_type
+import tweet_word
 
 # Process each line of the stream
 def process_lines(lines):
@@ -66,7 +67,13 @@ def process_lines(lines):
   tweet_popularities = converted_popularities.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
   tweet_popularities.foreachRDD(tweet_popularity.insert_tweet_popularities)
 
-  return tweet_types
+  # Count for every words
+  converted_words = objects.flatMap(tweet_word.get_tweet_words).map(lambda word: (word, 1))
+  reduced_words = converted_words.reduceByKey(lambda a, b: a + b)
+  tweet_words = reduced_words.transform(lambda rdd: rdd.sortBy(lambda x: x[1], ascending = False))
+  tweet_words.foreachRDD(tweet_word.insert_tweet_words)
+
+  return tweet_words
 
 # Environment variables
 APP_NAME = config.spark_app_name
