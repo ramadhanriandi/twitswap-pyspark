@@ -28,13 +28,14 @@ def insert_tweet_hashtags(rdd):
   for data in tweet_hashtags:
     parsed_hashtag = data[0].split("|")
 
-    name = parsed_hashtag[0]
-    count = data[1]
-    rule_id = parsed_hashtag[1]
+    if len(parsed_hashtag) == 2:
+      name = parsed_hashtag[0]
+      count = data[1]
+      rule_id = parsed_hashtag[1]
 
-    cursor.execute(
-      """INSERT INTO tweet_hashtags(name, count, rule_id) VALUES (%s, %s, %s)""",
-      (name, count, rule_id)
-    )
+      cursor.execute(
+        """INSERT INTO tweet_hashtags(name, count, rule_id) VALUES (%s, %s, %s)""",
+        (name, count, rule_id)
+      )
   
   postgresql.close_connection_cursor(connection, cursor)

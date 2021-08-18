@@ -28,13 +28,14 @@ def insert_tweet_annotations(rdd):
   for data in tweet_annotations:
     parsed_annotation = data[0].split("|")
 
-    name = parsed_annotation[0]
-    count = data[1]
-    rule_id = parsed_annotation[1]
+    if len(parsed_annotation) == 2:
+      name = parsed_annotation[0]
+      count = data[1]
+      rule_id = parsed_annotation[1]
 
-    cursor.execute(
-      """INSERT INTO tweet_annotations(name, count, rule_id) VALUES (%s, %s, %s)""",
-      (name, count, rule_id)
-    )
+      cursor.execute(
+        """INSERT INTO tweet_annotations(name, count, rule_id) VALUES (%s, %s, %s)""",
+        (name, count, rule_id)
+      )
   
   postgresql.close_connection_cursor(connection, cursor)

@@ -25,13 +25,14 @@ def insert_tweet_domains(rdd):
   for data in tweet_domains:
     parsed_domain = data[0].split("|")
 
-    name = parsed_domain[0]
-    count = data[1]
-    rule_id = parsed_domain[1]
+    if len(parsed_domain) == 2:
+      name = parsed_domain[0]
+      count = data[1]
+      rule_id = parsed_domain[1]
 
-    cursor.execute(
-      """INSERT INTO tweet_domains(name, count, rule_id) VALUES (%s, %s, %s)""",
-      (name, count, rule_id)
-    )
+      cursor.execute(
+        """INSERT INTO tweet_domains(name, count, rule_id) VALUES (%s, %s, %s)""",
+        (name, count, rule_id)
+      )
   
   postgresql.close_connection_cursor(connection, cursor)

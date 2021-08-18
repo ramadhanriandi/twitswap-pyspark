@@ -28,16 +28,17 @@ def insert_tweet_languages(rdd):
       if len(data[0]) > 0:
         parsed_language = data[0].split("|")
 
-        language = parsed_language[0]
-        count = data[1]
-        rule_id = parsed_language[1]
+        if len(parsed_language) == 2:
+          language = parsed_language[0]
+          count = data[1]
+          rule_id = parsed_language[1]
 
-        if language == "en":
-          en_count = count
-        elif language == "in":
-          in_count = count
-        elif language == "other":
-          other_count = count
+          if language == "en":
+            en_count = count
+          elif language == "in":
+            in_count = count
+          elif language == "other":
+            other_count = count
 
     if len(rule_id) > 0:
       cursor.execute(

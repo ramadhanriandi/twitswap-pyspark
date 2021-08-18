@@ -35,18 +35,19 @@ def insert_tweet_types(rdd):
       if len(data[0]) > 0:
         parsed_type = data[0].split("|")
 
-        tweet_type = parsed_type[0]
-        count = data[1]
-        rule_id = parsed_type[1]
+        if len(parsed_type) == 2:
+          tweet_type = parsed_type[0]
+          count = data[1]
+          rule_id = parsed_type[1]
 
-        if tweet_type == "tweet":
-          tweet_count = count
-        elif tweet_type == "retweet":
-          retweet_count = count
-        elif tweet_type == "quote":
-          quote_count = count
-        elif tweet_type == "replied_to":
-          reply_count = count
+          if tweet_type == "tweet":
+            tweet_count = count
+          elif tweet_type == "retweet":
+            retweet_count = count
+          elif tweet_type == "quote":
+            quote_count = count
+          elif tweet_type == "replied_to":
+            reply_count = count
 
     if len(rule_id) > 0:
       cursor.execute(

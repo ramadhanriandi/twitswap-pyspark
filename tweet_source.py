@@ -35,18 +35,19 @@ def insert_tweet_sources(rdd):
       if len(data[0]) > 0:
         parsed_source = data[0].split("|")
 
-        source = parsed_source[0]
-        count = data[1]
-        rule_id = parsed_source[1]
+        if len(parsed_source) == 2:
+          source = parsed_source[0]
+          count = data[1]
+          rule_id = parsed_source[1]
 
-        if source == "web":
-          web_count = count
-        elif source == "iphone":
-          iphone_count = count
-        elif source == "android":
-          android_count = count
-        elif source == "other":
-          other_count = count
+          if source == "web":
+            web_count = count
+          elif source == "iphone":
+            iphone_count = count
+          elif source == "android":
+            android_count = count
+          elif source == "other":
+            other_count = count
 
     if len(rule_id) > 0:
       cursor.execute(

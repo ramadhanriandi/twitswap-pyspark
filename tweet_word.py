@@ -43,13 +43,14 @@ def insert_tweet_words(rdd):
   for data in tweet_words:
     parsed_word = data[0].split("|")
 
-    name = parsed_word[0]
-    count = data[1]
-    rule_id = parsed_word[1]
+    if len(parsed_word) == 2:
+      name = parsed_word[0]
+      count = data[1]
+      rule_id = parsed_word[1]
 
-    cursor.execute(
-      """INSERT INTO tweet_words(name, count, rule_id) VALUES (%s, %s, %s)""",
-      (name, count, rule_id)
-    )
+      cursor.execute(
+        """INSERT INTO tweet_words(name, count, rule_id) VALUES (%s, %s, %s)""",
+        (name, count, rule_id)
+      )
   
   postgresql.close_connection_cursor(connection, cursor)
